@@ -6,15 +6,12 @@ Portal líder de empleo en Ecuador.
 Usa la API interna JSON descubierta inspeccionando el tráfico de red (junio 2026):
   POST /api/avisos/searchV2?pageSize=20&page=0&sort=RECIENTES
   Header requerido: x-site-id: BMEC
-  Body: {"busqueda": "término"}
+  Body: {"query": "término", "filtros": []}
 
 No requiere autenticación ni API key.
 
-TODO: La búsqueda no filtra correctamente por keyword — el body {"busqueda": "..."}
-retorna todos los avisos de la plataforma (~5580) ordenados por fecha, no filtrados.
-El browser probablemente envía parámetros adicionales. Investigar el body real
-del POST que hace la app React para que el filtro funcione.
-Por ahora funciona pero retorna muchos duplicados entre términos.
+NOTA: El campo correcto para buscar es "query" (no "busqueda").
+      Descubierto interceptando fetch() en el browser (2026-06-24).
 
 Uso:
     python script/01_extractor_multitrabajos.py
@@ -86,10 +83,11 @@ def buscar_multitrabajos(termino, max_paginas=MAX_PAGINAS):
         params = {
             "pageSize": str(PAGE_SIZE),
             "page": str(pagina),
-            "sort": "RECIENTES",
+            "sort": "RELEVANTES",
         }
         payload = {
-            "busqueda": termino,
+            "query": termino,
+            "filtros": [],
         }
 
         try:

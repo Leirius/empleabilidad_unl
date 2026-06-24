@@ -41,7 +41,7 @@ except ImportError:
 
 # ── Configuración ────────────────────────────────────────────
 URL = "https://encuentraempleo.trabajo.gob.ec/socioEmpleo-war/paginas/procesos/busquedaOfertaPublica.jsf"
-ROWS_PER_PAGE = 15  # Pedir 15 instituciones por página (máx del portal)
+ROWS_PER_PAGE = 5  # 5 instituciones por página (default del portal, 1414/283 páginas)
 VACANTES_ROWS = 100  # Pedir hasta 100 vacantes por institución
 DELAY_MIN = 1.0
 DELAY_MAX = 2.5
@@ -274,9 +274,17 @@ def main():
 
             logging.info(f"  [{instituciones_total + 1}] {inst['nombre']}: {inst['vacantes_text']}")
 
+            # Saltar instituciones con 0 nuevas vacantes
+            if inst["vacantes_text"].startswith("0"):
+                logging.info(f"    → Saltando (0 nuevas vacantes)")
+                instituciones_total += 1
+                continue
+
             # Hacer la llamada AJAX para abrir el modal de vacantes
-            # El source es: formBuscaPublica:itemsTable:{ROW}:j_idt36
-            source_id = f"formBuscaPublica:itemsTable:{row_index}:j_idt36"
+            # El source es: formBuscaPublica:itemsTable:{ROW}:j_idt34
+            # j_idt34 = "Nuevas vacantes" (Ver), j_idt36 = "Puesto en concurso" (Ver)
+            # Descubierto interceptando XHR en el browser (2026-06-24)
+            source_id = f"formBuscaPublica:itemsTable:{row_index}:j_idt34"
             data = {
                 "javax.faces.partial.ajax": "true",
                 "javax.faces.source": source_id,
