@@ -273,6 +273,178 @@
         "el oro": [
             "Machala",
             "El Oro"
+        ],
+        "cayambe": [
+            "Cayambe",
+            "Pichincha"
+        ],
+        "el ángel": [
+            "El Ángel",
+            "Carchi"
+        ],
+        "el angel": [
+            "El Ángel",
+            "Carchi"
+        ],
+        "santa elena": [
+            "Santa Elena",
+            "Santa Elena"
+        ],
+        "salinas": [
+            "Salinas",
+            "Santa Elena"
+        ],
+        "orellana": [
+            "Puerto Francisco de Orellana",
+            "Orellana"
+        ],
+        "coca": [
+            "Puerto Francisco de Orellana",
+            "Orellana"
+        ],
+        "shushufindi": [
+            "Shushufindi",
+            "Sucumbíos"
+        ],
+        "sangolquí": [
+            "Sangolquí",
+            "Pichincha"
+        ],
+        "sangolqui": [
+            "Sangolquí",
+            "Pichincha"
+        ],
+        "otavalo": [
+            "Otavalo",
+            "Imbabura"
+        ],
+        "buena fe": [
+            "Buena Fe",
+            "Los Ríos"
+        ],
+        "quevedo": [
+            "Quevedo",
+            "Los Ríos"
+        ],
+        "santa clara": [
+            "Santa Clara",
+            "Pastaza"
+        ],
+        "cotopaxi": [
+            "Latacunga",
+            "Cotopaxi"
+        ],
+        "manabí": [
+            "Portoviejo",
+            "Manabí"
+        ],
+        "manabi": [
+            "Portoviejo",
+            "Manabí"
+        ],
+        "tungurahua": [
+            "Ambato",
+            "Tungurahua"
+        ],
+        "chimborazo": [
+            "Riobamba",
+            "Chimborazo"
+        ],
+        "imbabura": [
+            "Ibarra",
+            "Imbabura"
+        ],
+        "napo": [
+            "Tena",
+            "Napo"
+        ],
+        "sucumbíos": [
+            "Nueva Loja",
+            "Sucumbíos"
+        ],
+        "sucumbios": [
+            "Nueva Loja",
+            "Sucumbíos"
+        ],
+        "bolívar": [
+            "Guaranda",
+            "Bolívar"
+        ],
+        "bolivar": [
+            "Guaranda",
+            "Bolívar"
+        ],
+        "cañar": [
+            "Azogues",
+            "Cañar"
+        ],
+        "canar": [
+            "Azogues",
+            "Cañar"
+        ],
+        "carchi": [
+            "Tulcán",
+            "Carchi"
+        ],
+        "los ríos": [
+            "Babahoyo",
+            "Los Ríos"
+        ],
+        "los rios": [
+            "Babahoyo",
+            "Los Ríos"
+        ],
+        "pastaza": [
+            "Puyo",
+            "Pastaza"
+        ],
+        "morona santiago": [
+            "Macas",
+            "Morona Santiago"
+        ],
+        "zamora chinchipe": [
+            "Zamora",
+            "Zamora Chinchipe"
+        ],
+        "santo domingo de los tsáchilas": [
+            "Santo Domingo",
+            "Santo Domingo de los Tsáchilas"
+        ],
+        "esmeraldas": [
+            "Esmeraldas",
+            "Esmeraldas"
+        ],
+        "santa rosa": [
+            "Santa Rosa",
+            "El Oro"
+        ],
+        "pasaje": [
+            "Pasaje",
+            "El Oro"
+        ],
+        "loja": [
+            "Loja",
+            "Loja"
+        ],
+        "pedro moncayo": [
+            "Tabacundo",
+            "Pichincha"
+        ],
+        "tabacundo": [
+            "Tabacundo",
+            "Pichincha"
+        ],
+        "mejía": [
+            "Machachi",
+            "Pichincha"
+        ],
+        "mejia": [
+            "Machachi",
+            "Pichincha"
+        ],
+        "pedro carbo": [
+            "Pedro Carbo",
+            "Guayas"
         ]
     },
     "terminos_por_carrera": {

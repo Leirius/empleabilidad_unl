@@ -41,7 +41,7 @@ except ImportError:
 API_HOST = "linkedin-job-search-api.p.rapidapi.com"
 ENDPOINT = "/active-jb"
 LIMIT_PER_REQUEST = 20
-TIME_FRAME = "1m"      # Último mes
+TIME_FRAME = "6m"      # Últimos 6 meses (opciones válidas: 1h, 24h, 7d, 6m)
 DELAY_MIN = 1.0
 DELAY_MAX = 2.5
 TIMEOUT = 20

@@ -25,6 +25,7 @@ import json
 import logging
 import time
 import random
+import math
 from datetime import datetime
 
 logging.basicConfig(
@@ -97,12 +98,12 @@ def buscar_jobspy(termino, carrera):
                     "url": str(row.get("job_url", "")),
                     "source": str(row.get("site", "")),
                     "date_posted": str(row.get("date_posted", "")),
-                    "job_type": str(row.get("job_type", "")),
+                    "job_type": "" if str(row.get("job_type", "")) == "nan" else str(row.get("job_type", "")),
                     "is_remote": bool(row.get("is_remote", False)),
-                    "salary_min": row.get("min_amount") if row.get("min_amount") else None,
-                    "salary_max": row.get("max_amount") if row.get("max_amount") else None,
-                    "salary_interval": str(row.get("interval", "")),
-                    "salary_currency": str(row.get("currency", "")),
+                    "salary_min": None if (v := row.get("min_amount")) is None or (isinstance(v, float) and math.isnan(v)) else float(v),
+                    "salary_max": None if (v := row.get("max_amount")) is None or (isinstance(v, float) and math.isnan(v)) else float(v),
+                    "salary_interval": "" if str(row.get("interval", "")) == "nan" else str(row.get("interval", "")),
+                    "salary_currency": "" if str(row.get("currency", "")) == "nan" else str(row.get("currency", "")),
                     "description_snippet": str(row.get("description", ""))[:500],
                     "carrera_origen": carrera,
                     "termino_busqueda": termino,
