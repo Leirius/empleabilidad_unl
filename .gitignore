@@ -1,0 +1,36 @@
+# ── R / RStudio ──────────────────────────────────────────────
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# ── Secretos y configuracion local ───────────────────────────
+.env
+
+# ── Datos (nunca subir a GitHub) ─────────────────────────────
+data/
+*.xlsx
+*.csv
+*.json
+!config/catalogos.json
+*.rds
+*.parquet
+
+# ── Archivos legacy / pruebas ────────────────────────────────
+archive/
+
+# ── Notebooks (pesados, no van al repo) ──────────────────────
+*.ipynb
+.ipynb_checkpoints/
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

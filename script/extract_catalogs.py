@@ -1,0 +1,128 @@
+import os
+import json
+
+HABILIDADES_HARD = [
+    "python", "java", "javascript", "typescript", "c#", "c++", "php", "ruby",
+    "r", "scala", "kotlin", "swift", "golang", "matlab", "bash",
+    "sql", "mysql", "postgresql", "oracle", "mongodb", "redis", "sqlite",
+    "sql server", "cassandra", "elasticsearch",
+    "react", "angular", "vue", "django", "flask", "fastapi", "spring",
+    "laravel", "node.js", "express", ".net", "jquery", "bootstrap",
+    "tensorflow", "pytorch", "scikit-learn", "pandas", "numpy", "keras",
+    "aws", "azure", "gcp", "docker", "kubernetes", "terraform", "jenkins",
+    "github actions", "ci/cd", "linux", "git",
+    "power bi", "tableau", "looker", "excel", "excel avanzado",
+    "business intelligence", "etl", "data warehouse", "airflow",
+    "machine learning", "deep learning", "nlp", "computer vision",
+    "sap", "salesforce", "jira", "scrum", "agile", "kanban",
+    "photoshop", "illustrator", "figma", "autocad", "revit",
+    "contifico", "monica", "fénix", "siigo", "ifrs", "niif",
+    "contabilidad", "tributación", "auditoría", "costos",
+    "cisco", "networking", "firewall", "vpn", "ciberseguridad", "iso 27001",
+]
+
+HABILIDADES_SOFT = [
+    "liderazgo", "comunicación", "trabajo en equipo", "proactividad",
+    "resolución de problemas", "adaptabilidad", "creatividad", "negociación",
+    "empatía", "gestión del tiempo", "orientación a resultados",
+    "pensamiento crítico", "organización", "atención al cliente",
+    "toma de decisiones", "iniciativa", "responsabilidad", "compromiso",
+    "trabajo bajo presión", "autonomía", "colaboración", "innovación",
+    "orientación al detalle", "multitarea", "aprendizaje continuo",
+    "gestión de proyectos", "planificación estratégica",
+]
+
+CIUDADES_ECUADOR = {
+    "quito":           ["Quito", "Pichincha"],
+    "guayaquil":       ["Guayaquil", "Guayas"],
+    "cuenca":          ["Cuenca", "Azuay"],
+    "loja":            ["Loja", "Loja"],
+    "manta":           ["Manta", "Manabí"],
+    "ambato":          ["Ambato", "Tungurahua"],
+    "riobamba":        ["Riobamba", "Chimborazo"],
+    "santo domingo":   ["Santo Domingo", "Santo Domingo de los Tsáchilas"],
+    "ibarra":          ["Ibarra", "Imbabura"],
+    "portoviejo":      ["Portoviejo", "Manabí"],
+    "esmeraldas":      ["Esmeraldas", "Esmeraldas"],
+    "machala":         ["Machala", "El Oro"],
+    "zamora":          ["Zamora", "Zamora Chinchipe"],
+    "nueva loja":      ["Nueva Loja", "Sucumbíos"],
+    "lago agrio":      ["Nueva Loja", "Sucumbíos"],
+    "samborondón":     ["Samborondón", "Guayas"],
+    "samborondon":     ["Samborondón", "Guayas"],
+    "daule":           ["Daule", "Guayas"],
+    "durán":           ["Durán", "Guayas"],
+    "duran":           ["Durán", "Guayas"],
+    "rumiñahui":       ["Rumiñahui", "Pichincha"],
+    "ruminahui":       ["Rumiñahui", "Pichincha"],
+    "latacunga":       ["Latacunga", "Cotopaxi"],
+    "azogues":         ["Azogues", "Cañar"],
+    "milagro":         ["Milagro", "Guayas"],
+    "babahoyo":        ["Babahoyo", "Los Ríos"],
+    "tulcán":          ["Tulcán", "Carchi"],
+    "tulcan":          ["Tulcán", "Carchi"],
+    "guaranda":        ["Guaranda", "Bolívar"],
+    "macas":           ["Macas", "Morona Santiago"],
+    "tena":            ["Tena", "Napo"],
+    "puyo":            ["Puyo", "Pastaza"],
+    "shell":           ["Shell", "Pastaza"],
+    "pichincha":       ["Quito", "Pichincha"],
+    "guayas":          ["Guayaquil", "Guayas"],
+    "azuay":           ["Cuenca", "Azuay"],
+    "el oro":          ["Machala", "El Oro"],
+}
+
+TERMINOS_POR_CARRERA = {
+    "Agronomía": ["agrónomo", "ingeniero agrónomo", "producción agrícola", "cultivos", "fitotecnia", "agronomía"],
+    "Ingeniería Agrícola": ["ingeniero agrícola", "riego y drenaje", "infraestructura agrícola", "mecanización agrícola", "hidráulica agrícola"],
+    "Ingeniería Ambiental": ["ingeniero ambiental", "gestión ambiental", "consultor ambiental", "analista ambiental", "auditor ambiental", "sostenibilidad"],
+    "Ingeniería Forestal": ["ingeniero forestal", "silvicultura", "manejo forestal", "gestión forestal", "reforestación", "recursos forestales"],
+    "Medicina Veterinaria": ["médico veterinario", "veterinario", "zootecnista", "clínica veterinaria", "sanidad animal"],
+    "Agronegocios": ["agronegocios", "negocios agrícolas", "comercialización agropecuaria", "cadena de valor agrícola", "agroempresa"],
+    "Artes Musicales": ["músico", "director musical", "instructor de música", "docente de música", "musicólogo", "productor musical"],
+    "Artes Visuales": ["diseñador gráfico", "artista visual", "ilustrador", "diseñador multimedia", "diseñador de contenido visual"],
+    "Comunicación": ["comunicador social", "periodista", "relacionador público", "comunicación corporativa", "community manager", "editor de contenidos"],
+    "Educación Básica": ["docente educación básica", "maestro de primaria", "profesor educación general básica", "tutor escolar"],
+    "Educación Especial": ["educador especial", "docente educación especial", "inclusión educativa", "terapista de lenguaje"],
+    "Educación Inicial": ["docente educación inicial", "parvulario", "profesor inicial", "estimulación temprana", "educadora de párvulos"],
+    "Pedagogía de la Actividad Física y Deporte": ["educación física", "entrenador deportivo", "profesor de deportes", "preparador físico", "entrenador personal"],
+    "Pedagogía de la Lengua y la Literatura": ["docente lengua y literatura", "profesor de español", "corrector de estilo", "docente de lenguaje"],
+    "Pedagogía de las CC. Experimentales - Informática": ["docente de informática", "profesor de computación", "tecnología educativa", "docente TIC"],
+    "Pedagogía de las CC. Experimentales - Matemáticas y Física": ["docente de matemáticas", "profesor de física", "tutor de matemáticas", "docente ciencias exactas"],
+    "Pedagogía de las CC. Experimentales - Química y Biología": ["docente de química", "profesor de biología", "docente ciencias naturales", "laboratorista escolar"],
+    "Pedagogía de los Idiomas Nacionales y Extranjeros": ["docente de inglés", "profesor de idiomas", "traductor", "intérprete", "docente bilingüe"],
+    "Psicopedagogía": ["psicopedagogo", "orientador educativo", "consejero estudiantil", "orientador vocacional", "DECE"],
+    "Arquitectura Sostenible": ["arquitecto", "arquitecto sostenible", "diseño arquitectónico", "urbanismo", "planificación urbana", "BIM"],
+    "Computación": ["ingeniero en sistemas", "analista de sistemas", "técnico en computación", "soporte técnico", "administrador de sistemas"],
+    "Electricidad": ["ingeniero eléctrico", "técnico electricista", "electricidad industrial", "redes eléctricas", "instalaciones eléctricas"],
+    "Electromecánica": ["ingeniero electromecánico", "técnico electromecánico", "mantenimiento industrial", "automatización industrial"],
+    "Ingeniería Automotriz": ["ingeniero automotriz", "mecánico automotriz", "diagnóstico automotriz", "técnico automotriz"],
+    "Ingeniería Civil": ["ingeniero civil", "residente de obra", "director de obra", "obras civiles", "gerente de construcción", "fiscalizador de obras"],
+    "Minas": ["ingeniero de minas", "ingeniero minero", "geólogo", "extracción minera", "seguridad minera", "topógrafo minero"],
+    "Telecomunicaciones": ["ingeniero en telecomunicaciones", "redes y telecomunicaciones", "técnico en redes", "administrador de redes", "infraestructura de redes"],
+    "Administración de Empresas": ["administrador de empresas", "gerente administrativo", "jefe administrativo", "coordinador administrativo", "director de operaciones", "gestor empresarial"],
+    "Administración Pública": ["administrador público", "gestión pública", "servidor público", "funcionario público", "gestión municipal", "coordinador de gobierno"],
+    "Contabilidad y Auditoría": ["contador general", "auditor", "tributación", "analista contable", "jefe contable", "asistente contable", "contador CPA"],
+    "Derecho": ["abogado", "asesor legal", "jurídico", "abogado corporativo", "asesor jurídico", "notario", "abogado laboral"],
+    "Economía": ["economista", "analista económico", "investigador económico", "consultor económico", "analista de políticas económicas"],
+    "Finanzas": ["analista financiero", "tesorero", "jefe financiero", "director financiero", "analista de riesgos", "controller financiero"],
+    "Trabajo Social": ["trabajador social", "asistente social", "gestor social", "promotor social", "coordinador social"],
+    "Turismo": ["guía turístico", "gerente de hotel", "agente de viajes", "coordinador de turismo", "operador turístico", "recepcionista de hotel"],
+    "Enfermería": ["enfermero", "enfermera", "auxiliar de enfermería", "enfermero clínico", "enfermero comunitario"],
+    "Laboratorio Clínico": ["bioquímico", "laboratorista clínico", "analista de laboratorio", "tecnólogo médico", "analista de laboratorio clínico"],
+    "Medicina": ["médico general", "médico especialista", "médico rural", "residente médico", "médico tratante"],
+    "Odontología": ["odontólogo", "dentista", "cirujano oral", "odontólogo general", "especialista en ortodoncia"],
+    "Psicología Clínica": ["psicólogo clínico", "psicoterapeuta", "psicólogo organizacional", "psicólogo educativo", "salud mental"]
+}
+
+if __name__ == "__main__":
+    os.makedirs("config", exist_ok=True)
+    catalog = {
+        "habilidades_hard": HABILIDADES_HARD,
+        "habilidades_soft": HABILIDADES_SOFT,
+        "ciudades_ecuador": CIUDADES_ECUADOR,
+        "terminos_por_carrera": TERMINOS_POR_CARRERA
+    }
+    with open("config/catalogos.json", "w", encoding="utf-8") as f:
+        json.dump(catalog, f, ensure_ascii=False, indent=4)
+    print("Catalog saved to config/catalogos.json")

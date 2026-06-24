@@ -1,0 +1,20 @@
+# ── Dependencias Python para el proyecto ─────────────────────
+# Instalar con: pip install -r requirements.txt
+
+# HTTP y scraping
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Variables de entorno
+python-dotenv>=1.0.0
+
+# JobSpy (Google Jobs + Indeed scraping)
+python-jobspy>=1.1.0
+
+# TLS fingerprint bypass para Cloudflare (Jooble Ecuador)
+# Misma técnica de python-jobspy (speedyapply/JobSpy)
+tls-client>=1.0.1
+
+# Playwright ya NO es necesario - Encuentra Empleo usa requests puro (JSF AJAX)
+# Si se necesita en el futuro: pip install playwright && playwright install chromium
