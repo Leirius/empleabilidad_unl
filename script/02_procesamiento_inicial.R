@@ -30,8 +30,9 @@ dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 # Cargar catálogos
 catalogos <- fromJSON(file.path(config_dir, "catalogos.json"))
 
-habilidades_hard <- tolower(catalogos$habilidades_hard)
-habilidades_soft <- tolower(catalogos$habilidades_soft)
+habilidades_hard  <- tolower(catalogos$habilidades_hard)
+habilidades_soft  <- tolower(catalogos$habilidades_soft)
+terminos_carrera  <- catalogos$terminos_por_carrera  # 40 carreras UNL con términos de búsqueda
 
 # Diccionario oficial de cantones/provincias del Ecuador (221 cantones, 24 provincias)
 # Fuente: mapa_cantones_ecuador.rds (shapefile con DPA_DESPRO, DPA_DESCAN)
@@ -207,6 +208,48 @@ normalizar_fecha <- function(fecha_raw) {
   }
 
   as.Date(NA)
+}
+
+#' Matching de vacante con carreras UNL usando terminos_por_carrera
+#' Busca en título + descripción contra los términos de cada carrera
+#' @param titulo Título del puesto
+#' @param descripcion Descripción de la vacante
+#' @param carrera_extraccion Carrera que originó la búsqueda (puede ser NA)
+#' @return String con carreras afines separadas por " | "
+matching_carreras <- function(titulo, descripcion, carrera_extraccion = NA_character_) {
+  texto <- tolower(paste(
+    coalesce(titulo, ""),
+    coalesce(descripcion, ""),
+    sep = " "
+  ))
+
+  if (texto == " " || texto == "") {
+    # Sin texto para analizar: usar carrera_extraccion si existe
+    if (!is.na(carrera_extraccion) && carrera_extraccion != "") {
+      return(carrera_extraccion)
+    }
+    return(NA_character_)
+  }
+
+  # terminos_por_carrera viene del catálogo (variable global)
+  carreras_match <- c()
+
+  for (carrera in names(terminos_carrera)) {
+    terminos <- terminos_carrera[[carrera]]
+    # Contar cuántos términos matchean
+    hits <- sum(sapply(terminos, function(t) str_detect(texto, fixed(tolower(t)))))
+    if (hits > 0) {
+      carreras_match <- c(carreras_match, carrera)
+    }
+  }
+
+  # Siempre incluir la carrera de extracción si existe
+  if (!is.na(carrera_extraccion) && carrera_extraccion != "") {
+    carreras_match <- unique(c(carrera_extraccion, carreras_match))
+  }
+
+  if (length(carreras_match) == 0) return(NA_character_)
+  paste(carreras_match, collapse = " | ")
 }
 
 #' Generar UUID determinístico a partir de título + empresa + fecha
@@ -545,9 +588,19 @@ df_procesado <- df_unificado %>%
   ) %>%
 
   # 5h. Moneda siempre USD para Ecuador
-  mutate(moneda = "USD")
+  mutate(moneda = "USD") %>%
 
-message("  ✓ Ubicación, fecha, modalidad, habilidades, experiencia, maestría")
+  # 5i. Matching carreras UNL ↔ vacantes
+  # Busca en título + descripción contra los 40 catálogos de términos
+  # Genera carreras_afines (puede tener múltiples) y complementa carrera_origen
+  mutate(
+    carreras_afines = pmap_chr(
+      list(titulo_puesto, descripcion_raw, carrera_origen),
+      matching_carreras
+    )
+  )
+
+message("  ✓ Ubicación, fecha, modalidad, habilidades, experiencia, maestría, carreras")
 
 # ── 6. Seleccionar y ordenar columnas (schema del cliente) ──────
 
@@ -572,6 +625,7 @@ df_final <- df_procesado %>%
     descripcion_raw,
     url_oferta,
     carrera_origen,
+    carreras_afines,
     termino_busqueda,
     # Extras útiles para análisis
     lat,
@@ -640,13 +694,24 @@ message(sprintf("\n✓ Guardado en data/processed/"))
 message(sprintf("  • df_vacantes_limpio.rds (%d filas × %d columnas)", nrow(df_final), ncol(df_final)))
 message(sprintf("  • df_vacantes_limpio.csv"))
 
-# Resumen de carreras
-message("\n--- Top 10 carreras con más vacantes ---")
+# Resumen de carreras afines (matching NLP)
+message("\n--- Top 15 carreras UNL con más vacantes afines ---")
+# Explotar carreras_afines (separadas por " | ") para contar individualmente
 df_final %>%
-  filter(!is.na(carrera_origen)) %>%
-  count(carrera_origen, sort = TRUE) %>%
-  head(10) %>%
+  filter(!is.na(carreras_afines)) %>%
+  separate_rows(carreras_afines, sep = "\\s*\\|\\s*") %>%
+  count(carreras_afines, sort = TRUE) %>%
+  head(15) %>%
   print()
+
+# Cobertura del matching
+n_con_carrera <- sum(!is.na(df_final$carreras_afines))
+message(sprintf("\nCobertura de matching: %d/%d vacantes (%.0f%%)",
+                n_con_carrera, nrow(df_final), 100 * n_con_carrera / nrow(df_final)))
+
+# Vacantes con múltiples carreras afines
+n_multi <- sum(str_detect(coalesce(df_final$carreras_afines, ""), "\\|"), na.rm = TRUE)
+message(sprintf("Vacantes multi-carrera: %d (%.0f%%)", n_multi, 100 * n_multi / nrow(df_final)))
 
 message("\n=== ESTRUCTURA DEL DATAFRAME FINAL ===")
 glimpse(df_final)
