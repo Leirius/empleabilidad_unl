@@ -236,14 +236,29 @@ matching_carreras <- function(titulo, descripcion, carrera_extraccion = NA_chara
 
   for (carrera in names(terminos_carrera)) {
     terminos <- terminos_carrera[[carrera]]
-    # Contar cuántos términos matchean
-    hits <- sum(sapply(terminos, function(t) str_detect(texto, fixed(tolower(t)))))
-    if (hits > 0) {
+    # Usar word boundaries (\b) para evitar falsos positivos por substring
+    # Ej: "auditor" no debe matchear dentro de "auditoría ambiental" como
+    #     evidencia de Contabilidad cuando el contexto es ambiental
+    hits <- sum(sapply(terminos, function(t) {
+      # \\Q...\\E = literal quoting (maneja chars especiales: c++, .net, ci/cd)
+      # \\b = word boundary (evita substring matches)
+      patron <- paste0("(?i)\\b\\Q", tolower(t), "\\E\\b")
+      str_detect(texto, patron)
+    }))
+
+    if (!is.na(carrera_extraccion) && carrera == carrera_extraccion) {
+      # La carrera de extracción siempre se incluye (ya fue validada por búsqueda)
+      next
+    }
+
+    # Para carreras NO originales: exigir al menos 2 términos para reducir ruido
+    # Ej: solo "auditor" no basta para asignar Contabilidad a una vacante ambiental
+    if (hits >= 2) {
       carreras_match <- c(carreras_match, carrera)
     }
   }
 
-  # Siempre incluir la carrera de extracción si existe
+  # Siempre incluir la carrera de extracción como primera
   if (!is.na(carrera_extraccion) && carrera_extraccion != "") {
     carreras_match <- unique(c(carrera_extraccion, carreras_match))
   }
