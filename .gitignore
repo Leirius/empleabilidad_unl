@@ -21,8 +21,21 @@ data/
 *.csv
 *.json
 !config/catalogos.json
+!config/scraping_config.json
 *.rds
 *.parquet
+
+# ── Archivos de proyecto IDE ────────────────────────────────
+*.Rproj
+
+# ── Documentos del cliente (confidenciales) ─────────────────
+documents/Empleabilidad, Cristian Ortiz UNL.md
+
+# ── Reportes auto-generados (se regeneran con scripts) ──────
+documents/reporte_campos_reales.md
+
+# ── Scripts de test auxiliares (no producción) ───────────────
+script/test_*.py
 
 # ── Archivos legacy / pruebas ────────────────────────────────
 archive/

@@ -35,11 +35,23 @@ except ImportError:
 
 
 # ── Configuración ────────────────────────────────────────────
+def cargar_scraping_config():
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "config", "scraping_config.json"
+    )
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return json.load(f).get("computrabajo", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+_cfg = cargar_scraping_config()
 BASE_URL = "https://ec.computrabajo.com"
-MAX_PAGINAS = 5
-DELAY_MIN = 2.5
-DELAY_MAX = 5.0
-TIMEOUT = 15
+MAX_PAGINAS = _cfg.get("max_paginas", 5)
+DELAY_MIN = _cfg.get("delay_min", 2.5)
+DELAY_MAX = _cfg.get("delay_max", 5.0)
+TIMEOUT = _cfg.get("timeout", 15)
 
 HEADERS = {
     "User-Agent": (
@@ -68,6 +80,55 @@ def limpiar_texto(texto):
     if not texto:
         return ""
     return " ".join(str(texto).strip().split())
+
+
+# Valores que CompuTrabajo pone en el campo salario pero NO son salarios reales
+SALARIO_BASURA = {"postulado vista", "postulado", "vista", "a convenir", ""}
+
+
+def es_salario_real(valor):
+    """Verifica si el valor capturado es un salario real o basura del sitio."""
+    if not valor:
+        return False
+    return valor.strip().lower() not in SALARIO_BASURA
+
+
+def scrape_detalle_oferta(url, session=None):
+    """
+    Visita la página individual de una oferta en CompuTrabajo para extraer
+    la descripción completa y datos adicionales.
+    Retorna dict con los campos extraídos.
+    """
+    if not url or not url.startswith("http"):
+        return {}
+
+    try:
+        resp = (session or requests).get(url, headers=HEADERS, timeout=TIMEOUT)
+        if resp.status_code != 200:
+            return {}
+
+        soup = BeautifulSoup(resp.text, "lxml")
+
+        datos = {}
+
+        # Descripción: está en <div class="box_detail"> o <div class="cm-12 p0 dA">
+        desc_el = soup.find("div", class_=re.compile(r"box_detail|detail_desc", re.I))
+        if not desc_el:
+            desc_el = soup.find("div", class_="cm-12 p0 dA")
+        if not desc_el:
+            # Fallback: buscar el contenido principal del detalle
+            desc_el = soup.find("div", id=re.compile(r"ContentBody|MainContent", re.I))
+
+        if desc_el:
+            # Limpiar HTML pero preservar estructura básica
+            texto = desc_el.get_text(separator="\n", strip=True)
+            datos["description"] = limpiar_texto(texto)
+
+        return datos
+
+    except Exception as e:
+        logging.debug(f"  Error scraping detalle {url}: {e}")
+        return {}
 
 
 def scrape_computrabajo(termino, max_paginas=MAX_PAGINAS):
@@ -160,9 +221,10 @@ def scrape_computrabajo(termino, max_paginas=MAX_PAGINAS):
                             # Párrafo de fecha
                             fecha = limpiar_texto(p.get_text())
 
-                    # Salario (tag opcional)
+                    # Salario (tag opcional) — filtrar valores basura
                     salario_el = tarjeta.find(class_=re.compile(r"salary|salario|tag", re.I))
-                    salario = limpiar_texto(salario_el.get_text()) if salario_el else ""
+                    salario_raw = limpiar_texto(salario_el.get_text()) if salario_el else ""
+                    salario = salario_raw if es_salario_real(salario_raw) else ""
 
                     resultados.append({
                         "title": titulo,
@@ -172,7 +234,7 @@ def scrape_computrabajo(termino, max_paginas=MAX_PAGINAS):
                         "url": link,
                         "date_posted": fecha,
                         "source": "CompuTrabajo",
-                        "description_snippet": "",
+                        "description_snippet": "",  # Se llena después con scraping de detalle
                     })
 
                 except Exception:
@@ -226,6 +288,33 @@ def main():
 
             if resultados:
                 logging.info(f"  '{kw}': {len(resultados)} resultados, {nuevos} nuevos")
+
+    # ── Scraping de detalle: obtener descripción de cada oferta ──
+    # Controlado por config: computrabajo.scrape_detalle (default: true)
+    scrape_detalle = _cfg.get("scrape_detalle", True)
+    if all_jobs and scrape_detalle:
+        logging.info(f"\n--- Scraping de detalle para {len(all_jobs)} ofertas ---")
+        logging.info("  (visitando cada página individual para obtener descripción)")
+        session = requests.Session()
+        session.headers.update(HEADERS)
+
+        completadas = 0
+        for i, job in enumerate(all_jobs):
+            if not job.get("url"):
+                continue
+
+            detalle = scrape_detalle_oferta(job["url"], session=session)
+            if detalle.get("description"):
+                job["description_snippet"] = detalle["description"]
+                completadas += 1
+
+            if (i + 1) % 10 == 0:
+                logging.info(f"  Progreso: {i + 1}/{len(all_jobs)} ({completadas} con descripción)")
+
+            # Delay más largo para evitar bloqueo (visitas individuales)
+            time.sleep(random.uniform(DELAY_MIN + 1, DELAY_MAX + 2))
+
+        logging.info(f"  Detalle completado: {completadas}/{len(all_jobs)} con descripción")
 
     # Guardar resultados
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")

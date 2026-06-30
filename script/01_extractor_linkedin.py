@@ -40,11 +40,25 @@ except ImportError:
 # ── Configuración ────────────────────────────────────────────
 API_HOST = "linkedin-job-search-api.p.rapidapi.com"
 ENDPOINT = "/active-jb"
-LIMIT_PER_REQUEST = 20
-TIME_FRAME = "6m"      # Últimos 6 meses (opciones válidas: 1h, 24h, 7d, 6m)
-DELAY_MIN = 1.0
-DELAY_MAX = 2.5
-TIMEOUT = 20
+
+def cargar_scraping_config():
+    """Carga config centralizada. Fallback a defaults si no existe."""
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "config", "scraping_config.json"
+    )
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return json.load(f).get("linkedin", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+_cfg = cargar_scraping_config()
+LIMIT_PER_REQUEST = _cfg.get("limit_per_request", 100)
+TIME_FRAME = _cfg.get("time_frame", "6m")
+DELAY_MIN = _cfg.get("delay_min", 1.0)
+DELAY_MAX = _cfg.get("delay_max", 2.5)
+TIMEOUT = _cfg.get("timeout", 20)
 
 
 def cargar_catalogos():

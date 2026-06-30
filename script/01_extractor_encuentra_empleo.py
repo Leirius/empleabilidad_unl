@@ -40,12 +40,24 @@ except ImportError:
 
 
 # ── Configuración ────────────────────────────────────────────
+def cargar_scraping_config():
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "config", "scraping_config.json"
+    )
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return json.load(f).get("encuentra_empleo", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+_cfg = cargar_scraping_config()
 URL = "https://encuentraempleo.trabajo.gob.ec/socioEmpleo-war/paginas/procesos/busquedaOfertaPublica.jsf"
-ROWS_PER_PAGE = 5  # 5 instituciones por página (default del portal, 1414/283 páginas)
-VACANTES_ROWS = 100  # Pedir hasta 100 vacantes por institución
-DELAY_MIN = 1.0
-DELAY_MAX = 2.5
-TIMEOUT = 30
+ROWS_PER_PAGE = _cfg.get("rows_per_page", 5)
+VACANTES_ROWS = _cfg.get("vacantes_rows", 100)
+DELAY_MIN = _cfg.get("delay_min", 1.0)
+DELAY_MAX = _cfg.get("delay_max", 2.5)
+TIMEOUT = _cfg.get("timeout", 30)
 
 HEADERS = {
     "User-Agent": (

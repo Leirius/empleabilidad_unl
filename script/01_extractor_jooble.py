@@ -45,20 +45,30 @@ except ImportError:
 
 
 # ── Configuración ────────────────────────────────────────────
-# Endpoint interno de Jooble (NO la API partner que no funciona para Ecuador)
-# Referencia: github.com/TodorovicSrdjan/jooble-scraper → constants.py
+def cargar_scraping_config():
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "config", "scraping_config.json"
+    )
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return json.load(f).get("jooble", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+_cfg = cargar_scraping_config()
 JOOBLE_URL = "https://ec.jooble.org/api/serp/jobs"
 
-# Parámetros de la API interna (valores de constants.py del repo)
-DATE_ANY = 7        # Sin filtro de fecha
+# Parámetros de la API interna
+DATE_ANY = 7
 DATE_1_DAY = 8
 DATE_3_DAYS = 2
 DATE_7_DAYS = 3
 
-MAX_PAGINAS = 3
-DELAY_MIN = 1.5
-DELAY_MAX = 3.0
-TIMEOUT = 20
+MAX_PAGINAS = _cfg.get("max_paginas", 5)
+DELAY_MIN = _cfg.get("delay_min", 1.5)
+DELAY_MAX = _cfg.get("delay_max", 3.0)
+TIMEOUT = _cfg.get("timeout", 20)
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -171,9 +181,11 @@ def buscar_jooble(session, termino, region="", max_paginas=MAX_PAGINAS):
                     "location": location.get("name", "") if isinstance(location, dict) else str(location),
                     "salary": str(job.get("salary", "")),
                     "url": job.get("url", ""),
-                    "description_snippet": limpiar_html(job.get("content", ""))[:500],
+                    "description_snippet": limpiar_html(job.get("content", "")),
                     "date_posted": str(job.get("dateCaption", "")),
                     "source": "Jooble",
+                    # job_type: la API de Jooble Ecuador NUNCA llena este campo (0/548 verificado)
+                    # Se mantiene por compatibilidad pero no contiene datos útiles
                     "job_type": str(job.get("jobType", "")),
                     "is_remote": job.get("isRemoteJob", False),
                 })

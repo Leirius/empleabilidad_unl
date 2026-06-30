@@ -1,22 +1,27 @@
 """
-01_extractor_jobspy.py
-Extractor de Indeed y Google Jobs para Ecuador usando python-jobspy.
-JobSpy (github.com/speedyapply/JobSpy) scrapea múltiples portales en paralelo.
+01_extractor_jobspy_linkedin.py
+Extractor de vacantes de LinkedIn usando python-jobspy (scraping gratuito).
 
-LinkedIn NO se incluye aquí porque la API de Fantastic Jobs
-(01_extractor_linkedin.py) provee datos mucho más ricos: coordenadas GPS,
-habilidades extraídas por IA, salarios inferidos, metadata de empresa, etc.
+Este script usa JobSpy SOLO con LinkedIn como fuente.
+Es una alternativa GRATUITA a la API de Fantastic Jobs cuando:
+  - Se agotan los créditos del plan Basic (250 jobs/mes)
+  - Se necesita un respaldo sin costo
+  - Se quiere comparar datos entre fuentes
 
-Si se necesita LinkedIn como fallback gratuito (sin la riqueza de la API),
-cambiar SITES a ["linkedin", "indeed", "google"] y descomentar
-linkedin_fetch_description=True.
+DIFERENCIA con 01_extractor_linkedin.py (Fantastic Jobs API):
+  - Fantastic Jobs: 71 campos, incluye IA (skills, education, salary inferido),
+    metadata empresa (headcount, industry), coordenadas GPS → MUCHO más rico
+  - Este script: ~20 campos básicos (título, empresa, ubicación, descripción,
+    salario si viene, tipo, remote) → suficiente para el análisis base
 
-Instalación:
-    pip install python-jobspy
+DIFERENCIA con 01_extractor_jobspy.py (Indeed + Google Jobs):
+  - Ese script usa sites=["indeed", "google"]
+  - Este script usa sites=["linkedin"] exclusivamente
+  - Son independientes para evitar conflictos de rate limiting
 
 Uso:
-    python script/01_extractor_jobspy.py
-    python script/01_extractor_jobspy.py --test   # Solo 3 carreras
+    python script/01_extractor_jobspy_linkedin.py
+    python script/01_extractor_jobspy_linkedin.py --test   # Solo 3 carreras
 """
 
 import os
@@ -24,8 +29,8 @@ import sys
 import json
 import logging
 import time
-import random
 import math
+import random
 from datetime import datetime
 
 logging.basicConfig(
@@ -50,18 +55,16 @@ def cargar_scraping_config():
     )
     try:
         with open(cfg_path, "r", encoding="utf-8") as f:
-            return json.load(f).get("jobspy", {})
+            return json.load(f).get("jobspy_linkedin", {})
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 _cfg = cargar_scraping_config()
-SITES = _cfg.get("sites", ["indeed", "google"])
-LOCATION = "Ecuador"
-COUNTRY_INDEED = "Ecuador"
-RESULTS_PER_SEARCH = _cfg.get("results_per_search", 50)
-HOURS_OLD = _cfg.get("hours_old", 720)
-DELAY_MIN = _cfg.get("delay_min", 2.0)
-DELAY_MAX = _cfg.get("delay_max", 4.0)
+RESULTS_PER_SEARCH = _cfg.get("results_per_search", 100)
+HOURS_OLD = _cfg.get("hours_old", 720)  # 30 días
+DELAY_MIN = _cfg.get("delay_min", 3.0)  # Más delay que Indeed/Google
+DELAY_MAX = _cfg.get("delay_max", 6.0)
+FETCH_DESCRIPTION = _cfg.get("fetch_description", True)
 
 
 def cargar_catalogos():
@@ -75,15 +78,13 @@ def cargar_catalogos():
 
 def parsear_location(location_str, city_raw, state_raw, country_raw):
     """
-    Intenta extraer city/state/country del string combinado de location
-    cuando los campos individuales vienen vacíos (bug conocido de JobSpy para Ecuador).
-    Formato típico: "Quito, Pichincha, EC" o "Guayaquil, G, EC" o "Ecuador"
+    Parsea city/state/country desde el string combinado de location
+    cuando los campos individuales vienen vacíos.
     """
     city = city_raw if city_raw and city_raw not in ("nan", "None", "") else ""
     state = state_raw if state_raw and state_raw not in ("nan", "None", "") else ""
     country = country_raw if country_raw and country_raw not in ("nan", "None", "") else ""
 
-    # Si ya tenemos datos, no hace falta parsear
     if city and country:
         return city, state, country
 
@@ -93,7 +94,6 @@ def parsear_location(location_str, city_raw, state_raw, country_raw):
     parts = [p.strip() for p in location_str.split(",") if p.strip()]
 
     if len(parts) >= 3:
-        # "Quito, Pichincha, EC" → city, state, country
         if not city:
             city = parts[0]
         if not state:
@@ -101,53 +101,44 @@ def parsear_location(location_str, city_raw, state_raw, country_raw):
         if not country:
             country = parts[2]
     elif len(parts) == 2:
-        # "Quito, EC" o "Pichincha, EC"
         if not city:
             city = parts[0]
         if not country:
             country = parts[1]
     elif len(parts) == 1:
-        # "Ecuador"
         if not country and parts[0].lower() in ("ec", "ecuador"):
             country = parts[0]
         elif not city:
             city = parts[0]
 
-    # Normalizar country code
     if country.upper() in ("EC",):
         country = "Ecuador"
 
     return city, state, country
 
 
-def buscar_jobspy(termino, carrera):
+def buscar_linkedin(termino, carrera):
     """
-    Busca vacantes usando python-jobspy para un término dado.
-    Retorna lista de diccionarios.
+    Busca vacantes en LinkedIn usando python-jobspy.
+    Retorna lista de diccionarios normalizados.
     """
     resultados = []
 
     try:
-        # Para Google Jobs, necesitamos un search term específico
-        google_term = f"{termino} empleos en Ecuador"
-
         jobs_df = scrape_jobs(
-            site_name=SITES,
+            site_name=["linkedin"],
             search_term=termino,
-            google_search_term=google_term,
-            location=LOCATION,
+            location="Ecuador",
             results_wanted=RESULTS_PER_SEARCH,
             hours_old=HOURS_OLD,
-            country_indeed=COUNTRY_INDEED,
-            linkedin_fetch_description=_cfg.get("linkedin_fetch_description", True),
-            verbose=0,  # Solo errores
+            linkedin_fetch_description=FETCH_DESCRIPTION,
+            verbose=0,
         )
 
         if jobs_df is not None and len(jobs_df) > 0:
             for _, row in jobs_df.iterrows():
-                # Parsear ubicación: los campos individuales suelen venir vacíos para Ecuador
                 loc_str = str(row.get("location", ""))
-                city_parsed, state_parsed, country_parsed = parsear_location(
+                city, state, country = parsear_location(
                     loc_str,
                     str(row.get("city", "")),
                     str(row.get("state", "")),
@@ -158,11 +149,11 @@ def buscar_jobspy(termino, carrera):
                     "title": str(row.get("title", "")),
                     "organization": str(row.get("company", "")),
                     "location": loc_str,
-                    "city": city_parsed,
-                    "state": state_parsed,
-                    "country": country_parsed,
+                    "city": city,
+                    "state": state,
+                    "country": country,
                     "url": str(row.get("job_url", "")),
-                    "source": str(row.get("site", "")),
+                    "source": "LinkedIn-JobSpy",
                     "date_posted": str(row.get("date_posted", "")),
                     "job_type": "" if str(row.get("job_type", "")) == "nan" else str(row.get("job_type", "")),
                     "is_remote": bool(row.get("is_remote", False)),
@@ -171,13 +162,18 @@ def buscar_jobspy(termino, carrera):
                     "salary_interval": "" if str(row.get("interval", "")) == "nan" else str(row.get("interval", "")),
                     "salary_currency": "" if str(row.get("currency", "")) == "nan" else str(row.get("currency", "")),
                     "description_snippet": str(row.get("description", "")),
+                    "job_level": "" if str(row.get("job_level", "")) == "nan" else str(row.get("job_level", "")),
+                    "job_function": "" if str(row.get("job_function", "")) == "nan" else str(row.get("job_function", "")),
+                    "company_industry": "" if str(row.get("company_industry", "")) == "nan" else str(row.get("company_industry", "")),
+                    "company_num_employees": None if (v := row.get("company_num_employees")) is None or (isinstance(v, float) and math.isnan(v)) else int(v),
+                    "skills": str(row.get("skills", "")) if str(row.get("skills", "")) != "nan" else "",
                     "carrera_origen": carrera,
                     "termino_busqueda": termino,
                 }
                 resultados.append(job)
 
     except Exception as e:
-        logging.warning(f"Error JobSpy para '{termino}': {e}")
+        logging.warning(f"Error JobSpy-LinkedIn para '{termino}': {e}")
 
     return resultados
 
@@ -201,7 +197,7 @@ def main():
         logging.info(f"--- Carrera: {carrera} ({len(terminos)} términos) ---")
 
         for kw in terminos:
-            resultados = buscar_jobspy(kw, carrera)
+            resultados = buscar_linkedin(kw, carrera)
             nuevos = 0
 
             for job in resultados:
@@ -214,6 +210,7 @@ def main():
             if resultados:
                 logging.info(f"  '{kw}': {len(resultados)} resultados, {nuevos} nuevos")
 
+            # Delay más largo para LinkedIn (evitar bloqueo)
             time.sleep(random.uniform(DELAY_MIN, DELAY_MAX))
 
     # Guardar resultados
@@ -221,7 +218,7 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(os.path.dirname(script_dir), "data", "raw")
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, f"jobspy_batch_{timestamp}.json")
+    output_path = os.path.join(output_dir, f"jobspy_linkedin_batch_{timestamp}.json")
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_jobs, f, ensure_ascii=False, indent=2, default=str)

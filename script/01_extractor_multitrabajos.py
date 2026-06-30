@@ -39,14 +39,26 @@ except ImportError:
 
 
 # ── Configuración ────────────────────────────────────────────
-API_URL = "https://www.multitrabajos.com/api/avisos/searchV2"
-SITE_ID = "BMEC"  # Bumeran Ecuador (de /candidate/site.js → window.SITE_ID)
+def cargar_scraping_config():
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "config", "scraping_config.json"
+    )
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            return json.load(f).get("multitrabajos", {})
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
-PAGE_SIZE = 20
-MAX_PAGINAS = 5       # Máx 100 resultados por término (20 × 5)
-DELAY_MIN = 1.5
-DELAY_MAX = 3.0
-TIMEOUT = 20
+_cfg = cargar_scraping_config()
+API_URL = "https://www.multitrabajos.com/api/avisos/searchV2"
+SITE_ID = "BMEC"
+
+PAGE_SIZE = _cfg.get("page_size", 20)
+MAX_PAGINAS = _cfg.get("max_paginas", 15)
+DELAY_MIN = _cfg.get("delay_min", 1.5)
+DELAY_MAX = _cfg.get("delay_max", 3.0)
+TIMEOUT = _cfg.get("timeout", 20)
 
 HEADERS = {
     "Content-Type": "application/json",
@@ -122,7 +134,7 @@ def buscar_multitrabajos(termino, max_paginas=MAX_PAGINAS):
                     "title": aviso.get("titulo", ""),
                     "organization": aviso.get("empresa", ""),
                     "location": aviso.get("localizacion", ""),
-                    "description_snippet": (aviso.get("detalle", "") or "")[:500],
+                    "description_snippet": aviso.get("detalle", "") or "",
                     "salary": "",  # No viene en el listado, solo indica salarioObligatorio
                     "url": aviso_url,
                     "date_posted": aviso.get("fechaPublicacion", ""),
