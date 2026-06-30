@@ -1,0 +1,75 @@
+{
+  "_comment": "Configuración centralizada de scraping. Todos los scripts leen de aquí.",
+
+  "global": {
+    "modo_test_carreras": 3,
+    "truncar_descripcion": false,
+    "max_descripcion_chars": null
+  },
+
+  "linkedin": {
+    "limit_per_request": 100,
+    "time_frame": "6m",
+    "delay_min": 1.0,
+    "delay_max": 2.5,
+    "timeout": 20
+  },
+
+  "jobspy": {
+    "sites": ["indeed", "google"],
+    "results_per_search": 50,
+    "hours_old": 720,
+    "delay_min": 2.0,
+    "delay_max": 4.0,
+    "linkedin_fetch_description": true
+  },
+
+  "computrabajo": {
+    "max_paginas": 5,
+    "delay_min": 2.5,
+    "delay_max": 5.0,
+    "timeout": 15,
+    "scrape_detalle": true
+  },
+
+  "multitrabajos": {
+    "page_size": 20,
+    "max_paginas": 15,
+    "delay_min": 1.5,
+    "delay_max": 3.0,
+    "timeout": 20,
+    "sort": "RECIENTES"
+  },
+
+  "jooble": {
+    "max_paginas": 5,
+    "date_filter": 7,
+    "delay_min": 1.5,
+    "delay_max": 3.0,
+    "timeout": 20
+  },
+
+  "coresignal": {
+    "delay_min": 0.5,
+    "delay_max": 1.5,
+    "timeout": 30,
+    "max_results_per_search": 50
+  },
+
+  "jobspy_linkedin": {
+    "results_per_search": 100,
+    "hours_old": 720,
+    "delay_min": 3.0,
+    "delay_max": 6.0,
+    "fetch_description": true
+  },
+
+  "encuentra_empleo": {
+    "rows_per_page": 5,
+    "vacantes_rows": 100,
+    "max_modal_pages": 10,
+    "delay_min": 1.0,
+    "delay_max": 2.5,
+    "timeout": 30
+  }
+}
